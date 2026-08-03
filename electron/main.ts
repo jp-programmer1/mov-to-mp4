@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { ConversionManager } from './converter'
-import { probeDuration, isGpuAvailable } from './ffmpeg'
+import { probeDuration, getGpuEncoder, encoderLabel } from './ffmpeg'
 import { loadSettings, saveSettings } from './settings'
 import type {
   EncoderInfo,
@@ -102,19 +102,20 @@ function registerIpc(): void {
   ipcMain.handle('settings:save', (_e, settings: Settings): Settings => saveSettings(settings))
 
   ipcMain.handle('encoder:info', async (_e, useGpu: boolean): Promise<EncoderInfo> => {
-    const gpuAvailable = await isGpuAvailable()
+    const gpuEncoder = await getGpuEncoder()
+    const gpuAvailable = gpuEncoder !== null
     const usingGpu = gpuAvailable && useGpu
     return {
       gpuAvailable,
       usingGpu,
-      label: usingGpu ? 'GPU · VideoToolbox (H.264)' : 'CPU · libx264 (H.264)',
+      label: encoderLabel(usingGpu ? gpuEncoder : null),
     }
   })
 
   ipcMain.handle('conversion:start', async (_e, jobs: VideoJob[], settings: Settings) => {
-    const gpuAvailable = await isGpuAvailable()
-    const effective: Settings = { ...settings, useGpu: settings.useGpu && gpuAvailable }
-    manager?.start(jobs, effective)
+    const gpuEncoder = settings.useGpu ? await getGpuEncoder() : null
+    const effective: Settings = { ...settings, useGpu: gpuEncoder !== null }
+    manager?.start(jobs, effective, gpuEncoder)
   })
 
   ipcMain.handle('conversion:cancelAll', () => manager?.cancelAll())

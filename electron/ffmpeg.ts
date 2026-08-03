@@ -45,9 +45,45 @@ export function listEncoders(): Promise<string[]> {
   })
 }
 
-export async function isGpuAvailable(): Promise<boolean> {
+/**
+ * Preferred hardware H.264 encoders per platform, in priority order.
+ * The first one that the bundled ffmpeg build reports as available wins.
+ * (VAAPI is intentionally excluded: it needs explicit device/hwupload setup.)
+ */
+const GPU_PRIORITY: Record<string, string[]> = {
+  darwin: ['h264_videotoolbox'],
+  win32: ['h264_nvenc', 'h264_qsv', 'h264_amf'],
+  linux: ['h264_nvenc', 'h264_qsv'],
+}
+
+const GPU_LABELS: Record<string, string> = {
+  h264_videotoolbox: 'GPU · VideoToolbox (H.264)',
+  h264_nvenc: 'GPU · NVIDIA NVENC (H.264)',
+  h264_qsv: 'GPU · Intel Quick Sync (H.264)',
+  h264_amf: 'GPU · AMD AMF (H.264)',
+}
+
+const CPU_LABEL = 'CPU · libx264 (H.264)'
+
+let cachedGpuEncoder: string | null | undefined
+
+/** Resolve the best available hardware encoder for the current platform, or null. */
+export async function getGpuEncoder(): Promise<string | null> {
+  if (cachedGpuEncoder !== undefined) return cachedGpuEncoder
   const encoders = await listEncoders()
-  return encoders.includes('h264_videotoolbox')
+  const priority = GPU_PRIORITY[process.platform] ?? []
+  cachedGpuEncoder = priority.find((enc) => encoders.includes(enc)) ?? null
+  return cachedGpuEncoder
+}
+
+export async function isGpuAvailable(): Promise<boolean> {
+  return (await getGpuEncoder()) !== null
+}
+
+/** Human-readable label for a resolved encoder (null → CPU). */
+export function encoderLabel(gpuEncoder: string | null): string {
+  if (!gpuEncoder) return CPU_LABEL
+  return GPU_LABELS[gpuEncoder] ?? `GPU · ${gpuEncoder}`
 }
 
 /** Probe a media file for its duration in seconds. Returns null on failure. */
@@ -61,33 +97,35 @@ export function probeDuration(inputPath: string): Promise<number | null> {
   })
 }
 
+const AUDIO_BITRATE: Record<Quality, string> = {
+  high: '192k',
+  medium: '160k',
+  low: '128k',
+}
+
 /**
  * Build the fluent-ffmpeg output options for a given quality and engine.
- * GPU path uses VideoToolbox (bitrate-based); CPU path uses libx264 (CRF-based).
+ * When `gpuEncoder` is set, uses that hardware encoder (bitrate-based, portable
+ * across NVENC / Quick Sync / AMF / VideoToolbox); otherwise libx264 (CRF-based).
  */
-export function buildOutputOptions(quality: Quality, useGpu: boolean): string[] {
+export function buildOutputOptions(quality: Quality, gpuEncoder: string | null): string[] {
   const audio = ['-c:a', 'aac']
   const faststart = ['-movflags', '+faststart']
 
-  if (useGpu) {
+  if (gpuEncoder) {
     const bitrate: Record<Quality, string> = {
       high: '10M',
       medium: '5M',
       low: '2M',
     }
-    const audioBitrate: Record<Quality, string> = {
-      high: '192k',
-      medium: '160k',
-      low: '128k',
-    }
     return [
       '-c:v',
-      'h264_videotoolbox',
+      gpuEncoder,
       '-b:v',
       bitrate[quality],
       ...audio,
       '-b:a',
-      audioBitrate[quality],
+      AUDIO_BITRATE[quality],
       ...faststart,
     ]
   }
@@ -97,11 +135,6 @@ export function buildOutputOptions(quality: Quality, useGpu: boolean): string[] 
     high: 'slow',
     medium: 'medium',
     low: 'veryfast',
-  }
-  const audioBitrate: Record<Quality, string> = {
-    high: '192k',
-    medium: '160k',
-    low: '128k',
   }
   return [
     '-c:v',
@@ -114,7 +147,7 @@ export function buildOutputOptions(quality: Quality, useGpu: boolean): string[] 
     'yuv420p',
     ...audio,
     '-b:a',
-    audioBitrate[quality],
+    AUDIO_BITRATE[quality],
     ...faststart,
   ]
 }

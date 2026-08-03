@@ -33,13 +33,52 @@ Se abrirá la ventana de la aplicación. La primera instalación descarga Electr
 ## Empaquetar como app de escritorio
 
 ```bash
-pnpm run dist:mac    # genera un .dmg en release/ (macOS)
-# npm run dist       # empaqueta para el sistema operativo actual
+pnpm run dist:mac     # .dmg   (macOS)
+pnpm run dist:win     # .exe   (Windows, instalador NSIS)
+pnpm run dist:linux   # .AppImage (Linux)
+pnpm run dist         # empaqueta para el sistema operativo actual
 ```
 
 El resultado queda en la carpeta `release/`. Los binarios de FFmpeg se copian sin comprimir (`asarUnpack`) para que funcionen dentro de la app empaquetada.
 
-> En macOS, como la app no está firmada con una cuenta de desarrollador de Apple, la primera vez debes abrirla con clic derecho → **Abrir**.
+> **Importante:** cada instalador debe compilarse en su sistema operativo nativo. `electron-builder` **no** genera de forma fiable el `.exe` de Windows desde macOS. Tienes dos caminos recomendados:
+
+### Opción A — GitHub Actions (recomendada, sin necesidad de una PC Windows)
+
+El repo incluye `.github/workflows/build.yml`, que compila en runners nativos de **Windows** y **macOS** a la vez.
+
+- Ejecución manual: pestaña **Actions → Build installers → Run workflow**. Los instaladores quedan como *artifacts* descargables.
+- Al publicar un tag de versión, además se adjuntan a una Release:
+
+  ```bash
+  git tag v1.0.0
+  git push origin v1.0.0
+  ```
+
+### Opción B — Compilar localmente en Windows
+
+En una máquina Windows con Node 18+ y pnpm:
+
+```bash
+pnpm install
+pnpm run dist:win
+```
+
+El instalador NSIS permite elegir la carpeta de instalación y crea accesos directos en escritorio y menú inicio.
+
+> El instalador de Windows no está firmado (sin certificado de código), así que SmartScreen puede mostrar una advertencia la primera vez: **Más información → Ejecutar de todas formas**. En macOS, al no estar firmada con cuenta de desarrollador de Apple, ábrela la primera vez con clic derecho → **Abrir**.
+
+## Aceleración por hardware (GPU)
+
+La app detecta automáticamente el mejor codificador disponible según el sistema y cae a CPU (libx264) si no hay ninguno:
+
+| Sistema | Codificadores GPU (en orden de preferencia) |
+| --- | --- |
+| macOS | VideoToolbox |
+| Windows | NVIDIA NVENC · Intel Quick Sync · AMD AMF |
+| Linux | NVIDIA NVENC · Intel Quick Sync |
+
+Si un codificador está listado pero el equipo no tiene el hardware compatible, la conversión reintenta automáticamente en CPU, de modo que nunca queda un archivo a medias.
 
 ## Estructura del proyecto
 

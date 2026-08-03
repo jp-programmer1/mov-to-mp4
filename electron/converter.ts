@@ -32,11 +32,14 @@ export class ConversionManager {
   private cancelled = new Set<string>()
   private settings: Settings | null = null
   private active = false
+  /** Resolved hardware encoder for this run, or null for CPU. */
+  private gpuEncoder: string | null = null
 
   constructor(private emit: Emit) {}
 
-  start(jobs: VideoJob[], settings: Settings): void {
+  start(jobs: VideoJob[], settings: Settings, gpuEncoder: string | null): void {
     this.settings = settings
+    this.gpuEncoder = gpuEncoder
     // Only (re)process jobs that are not already done.
     this.queue = jobs.filter((j) => j.status === 'pending' || j.status === 'error')
     this.cancelled.clear()
@@ -99,7 +102,7 @@ export class ConversionManager {
     return out
   }
 
-  private runJob(job: VideoJob): void {
+  private runJob(job: VideoJob, forceCpu = false): void {
     const settings = this.settings!
     let outputPath: string
     try {
@@ -117,7 +120,8 @@ export class ConversionManager {
       return
     }
 
-    const options = buildOutputOptions(settings.quality, settings.useGpu)
+    const encoder = forceCpu ? null : this.gpuEncoder
+    const options = buildOutputOptions(settings.quality, encoder)
     const startTime = Date.now()
 
     const command = ffmpeg(job.inputPath)
@@ -158,21 +162,31 @@ export class ConversionManager {
       })
       .on('error', (err: Error) => {
         this.running.delete(job.id)
+        // Always clean up the partial file left behind.
+        fs.rm(outputPath, { force: true }, () => {})
+
         if (this.cancelled.has(job.id)) {
           this.cancelled.delete(job.id)
-          // Remove the partial file left behind by the killed process.
-          fs.rm(outputPath, { force: true }, () => {})
           this.emit({ id: job.id, status: 'pending', progress: 0, etaSec: null, speed: null })
-        } else {
-          this.emit({
-            id: job.id,
-            status: 'error',
-            progress: 0,
-            etaSec: null,
-            speed: null,
-            error: err.message,
-          })
+          this.pump()
+          return
         }
+
+        // If a hardware-accelerated attempt failed (e.g. the encoder is listed
+        // but no compatible GPU is present), transparently retry on the CPU.
+        if (!forceCpu && encoder) {
+          this.runJob(job, true)
+          return
+        }
+
+        this.emit({
+          id: job.id,
+          status: 'error',
+          progress: 0,
+          etaSec: null,
+          speed: null,
+          error: err.message,
+        })
         this.pump()
       })
       .run()
