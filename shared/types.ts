@@ -4,6 +4,8 @@ export type JobStatus = 'pending' | 'converting' | 'completed' | 'error'
 
 export type Quality = 'high' | 'medium' | 'low'
 
+export type OutputFormat = 'mp4' | 'gif'
+
 export interface Settings {
   inputFolder: string | null
   outputFolder: string | null
@@ -11,6 +13,9 @@ export interface Settings {
   overwrite: boolean
   maxConcurrent: number
   useGpu: boolean
+  outputFormat: OutputFormat
+  /** Playback speed for GIF output. 1 = original, 2 = twice as fast. */
+  gifSpeed: number
 }
 
 /** Data describing a single video file queued for conversion. */

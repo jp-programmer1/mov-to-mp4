@@ -113,7 +113,8 @@ function registerIpc(): void {
   })
 
   ipcMain.handle('conversion:start', async (_e, jobs: VideoJob[], settings: Settings) => {
-    const gpuEncoder = settings.useGpu ? await getGpuEncoder() : null
+    const wantGpu = settings.outputFormat !== 'gif' && settings.useGpu
+    const gpuEncoder = wantGpu ? await getGpuEncoder() : null
     const effective: Settings = { ...settings, useGpu: gpuEncoder !== null }
     manager?.start(jobs, effective, gpuEncoder)
   })

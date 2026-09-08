@@ -151,3 +151,25 @@ export function buildOutputOptions(quality: Quality, gpuEncoder: string | null):
     ...faststart,
   ]
 }
+
+const GIF_PRESET: Record<Quality, { fps: number; width: number; colors: number }> = {
+  high: { fps: 15, width: 640, colors: 256 },
+  medium: { fps: 12, width: 480, colors: 192 },
+  low: { fps: 8, width: 320, colors: 128 },
+}
+
+/**
+ * Palette-based GIF export. `speed` > 1 accelerates playback (shorter GIF);
+ * `speed` < 1 slows it down. Audio is dropped.
+ */
+export function buildGifOutputOptions(quality: Quality, speed: number): string[] {
+  const preset = GIF_PRESET[quality]
+  const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1
+  const pts = `setpts=PTS/${safeSpeed}`
+  const filter =
+    `[0:v]${pts},fps=${preset.fps},scale=${preset.width}:-2:flags=lanczos,split[s0][s1];` +
+    `[s0]palettegen=max_colors=${preset.colors}:stats_mode=diff[p];` +
+    `[s1][p]paletteuse=dither=bayer:bayer_scale=5`
+
+  return ['-filter_complex', filter, '-loop', '0', '-an']
+}

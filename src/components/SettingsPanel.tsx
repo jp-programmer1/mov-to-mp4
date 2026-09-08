@@ -1,4 +1,4 @@
-import type { EncoderInfo, Quality, Settings } from '../../shared/types'
+import type { EncoderInfo, OutputFormat, Quality, Settings } from '../../shared/types'
 
 interface Props {
   settings: Settings
@@ -14,6 +14,20 @@ const QUALITY_OPTIONS: { value: Quality; label: string }[] = [
   { value: 'medium', label: 'Media' },
   { value: 'low', label: 'Baja' },
 ]
+
+const FORMAT_OPTIONS: { value: OutputFormat; label: string }[] = [
+  { value: 'mp4', label: 'MP4' },
+  { value: 'gif', label: 'GIF' },
+]
+
+const GIF_SPEED_PRESETS = [0.5, 1, 1.5, 2, 3]
+const GIF_SPEED_MIN = 0.25
+const GIF_SPEED_MAX = 4
+
+function formatSpeed(speed: number): string {
+  const rounded = Number.isInteger(speed) ? speed.toFixed(0) : speed.toFixed(2).replace(/0+$/, '')
+  return `${rounded}×`
+}
 
 function shortPath(p: string | null): string {
   if (!p) return 'Sin configurar'
@@ -66,6 +80,53 @@ export default function SettingsPanel({
       </div>
 
       <div className="field">
+        <label>Formato de salida</label>
+        <div className="segmented">
+          {FORMAT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              className={settings.outputFormat === opt.value ? 'seg active' : 'seg'}
+              onClick={() => onChange({ outputFormat: opt.value })}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {settings.outputFormat === 'gif' && (
+        <div className="field">
+          <label>Velocidad del GIF</label>
+          <div className="speed-row">
+            <input
+              className="speed-slider"
+              type="range"
+              min={GIF_SPEED_MIN}
+              max={GIF_SPEED_MAX}
+              step={0.25}
+              value={settings.gifSpeed ?? 1}
+              onChange={(e) => onChange({ gifSpeed: Number(e.target.value) })}
+            />
+            <span className="speed-value">{formatSpeed(settings.gifSpeed)}</span>
+          </div>
+          <div className="segmented speed-presets">
+            {GIF_SPEED_PRESETS.map((speed) => (
+              <button
+                key={speed}
+                className={settings.gifSpeed === speed ? 'seg active' : 'seg'}
+                onClick={() => onChange({ gifSpeed: speed })}
+              >
+                {formatSpeed(speed)}
+              </button>
+            ))}
+          </div>
+          <p className="hint">
+            Más de 1× acelera el GIF; menos de 1× lo ralentiza. El original no se modifica.
+          </p>
+        </div>
+      )}
+
+      <div className="field">
         <label>Calidad de exportación</label>
         <div className="segmented">
           {QUALITY_OPTIONS.map((opt) => (
@@ -78,6 +139,9 @@ export default function SettingsPanel({
             </button>
           ))}
         </div>
+        {settings.outputFormat === 'gif' && (
+          <p className="hint">En GIF controla resolución, fotogramas y colores.</p>
+        )}
       </div>
 
       <div className="field">
@@ -112,17 +176,23 @@ export default function SettingsPanel({
         <input
           type="checkbox"
           checked={settings.useGpu}
-          disabled={encoder ? !encoder.gpuAvailable : false}
+          disabled={settings.outputFormat === 'gif' || (encoder ? !encoder.gpuAvailable : false)}
           onChange={(e) => onChange({ useGpu: e.target.checked })}
         />
         Usar aceleración por GPU
       </label>
 
-      {encoder && (
+      {settings.outputFormat === 'gif' ? (
         <p className="engine">
-          Motor: <strong>{encoder.label}</strong>
-          {!encoder.gpuAvailable && ' (GPU no disponible en este equipo)'}
+          Motor: <strong>GIF · paleta (CPU)</strong>
         </p>
+      ) : (
+        encoder && (
+          <p className="engine">
+            Motor: <strong>{encoder.label}</strong>
+            {!encoder.gpuAvailable && ' (GPU no disponible en este equipo)'}
+          </p>
+        )
       )}
     </aside>
   )

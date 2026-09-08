@@ -78,6 +78,11 @@ body {
   color: #fff;
 }
 
+.logo.gif {
+  background: #c2410c;
+  color: #fff;
+}
+
 .arrow {
   color: var(--text-dim);
 }
@@ -475,6 +480,31 @@ body {
 
 .engine strong {
   color: var(--text);
+}
+
+.speed-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.speed-slider {
+  flex: 1;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.speed-value {
+  min-width: 42px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-presets {
+  margin-top: 2px;
+  flex-wrap: wrap;
 }
 
 /* Scrollbars */

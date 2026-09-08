@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import type { FfmpegCommand } from 'fluent-ffmpeg'
-import { ffmpeg, buildOutputOptions } from './ffmpeg'
+import { ffmpeg, buildOutputOptions, buildGifOutputOptions } from './ffmpeg'
 import type { ProgressUpdate, Settings, VideoJob } from '../shared/types'
 
 type Emit = (update: ProgressUpdate) => void
@@ -91,11 +91,12 @@ export class ConversionManager {
     const dir = settings.outputFolder || path.dirname(job.inputPath)
     fs.mkdirSync(dir, { recursive: true })
     const base = path.basename(job.fileName, path.extname(job.fileName))
-    let out = path.join(dir, `${base}.mp4`)
+    const ext = settings.outputFormat === 'gif' ? 'gif' : 'mp4'
+    let out = path.join(dir, `${base}.${ext}`)
     if (!settings.overwrite) {
       let i = 1
       while (fs.existsSync(out)) {
-        out = path.join(dir, `${base} (${i}).mp4`)
+        out = path.join(dir, `${base} (${i}).${ext}`)
         i += 1
       }
     }
@@ -121,8 +122,17 @@ export class ConversionManager {
     }
 
     const encoder = forceCpu ? null : this.gpuEncoder
-    const options = buildOutputOptions(settings.quality, encoder)
+    const isGif = settings.outputFormat === 'gif'
+    const options = isGif
+      ? buildGifOutputOptions(settings.quality, settings.gifSpeed)
+      : buildOutputOptions(settings.quality, encoder)
     const startTime = Date.now()
+    const gifSpeed =
+      isGif && Number.isFinite(settings.gifSpeed) && settings.gifSpeed > 0
+        ? settings.gifSpeed
+        : 1
+    const outputDuration =
+      job.durationSec && job.durationSec > 0 ? job.durationSec / gifSpeed : null
 
     const command = ffmpeg(job.inputPath)
       .outputOptions(options)
@@ -138,10 +148,10 @@ export class ConversionManager {
         const speed = elapsed > 0 ? processed / elapsed : null
         let progress = 0
         let etaSec: number | null = null
-        if (job.durationSec && job.durationSec > 0) {
-          progress = Math.min(99, (processed / job.durationSec) * 100)
+        if (outputDuration && outputDuration > 0) {
+          progress = Math.min(99, (processed / outputDuration) * 100)
           if (speed && speed > 0) {
-            etaSec = Math.max(0, (job.durationSec - processed) / speed)
+            etaSec = Math.max(0, (outputDuration - processed) / speed)
           }
         } else if (typeof p.percent === 'number' && Number.isFinite(p.percent)) {
           progress = Math.min(99, Math.max(0, p.percent))
@@ -172,9 +182,8 @@ export class ConversionManager {
           return
         }
 
-        // If a hardware-accelerated attempt failed (e.g. the encoder is listed
-        // but no compatible GPU is present), transparently retry on the CPU.
-        if (!forceCpu && encoder) {
+        // Hardware fallback only applies to MP4. GIF always uses CPU palettes.
+        if (!isGif && !forceCpu && encoder) {
           this.runJob(job, true)
           return
         }

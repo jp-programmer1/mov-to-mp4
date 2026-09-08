@@ -18,7 +18,7 @@ export default function App() {
         <div className="brand">
           <span className="logo">MOV</span>
           <span className="arrow">→</span>
-          <span className="logo mp4">MP4</span>
+          <span className={`logo ${c.settings.outputFormat}`}>{c.settings.outputFormat.toUpperCase()}</span>
         </div>
         <div className="topbar-actions">
           <button className="btn" onClick={c.pickFiles}>
