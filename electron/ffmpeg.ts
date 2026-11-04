@@ -152,10 +152,21 @@ export function buildOutputOptions(quality: Quality, gpuEncoder: string | null):
   ]
 }
 
-const GIF_PRESET: Record<Quality, { fps: number; width: number; colors: number }> = {
-  high: { fps: 15, width: 640, colors: 256 },
-  medium: { fps: 12, width: 480, colors: 192 },
-  low: { fps: 8, width: 320, colors: 128 },
+type GifPreset = {
+  fps: number
+  /** Max width in px; the source is never upscaled. */
+  width: number
+  colors: number
+  /** palettegen stats mode: `full` weighs all frames equally, `diff` favours moving areas. */
+  statsMode: 'full' | 'diff'
+  /** paletteuse dither algorithm. Error-diffusion (sierra2_4a) looks far cleaner than bayer. */
+  dither: string
+}
+
+const GIF_PRESET: Record<Quality, GifPreset> = {
+  high: { fps: 20, width: 960, colors: 256, statsMode: 'full', dither: 'sierra2_4a' },
+  medium: { fps: 15, width: 640, colors: 256, statsMode: 'diff', dither: 'sierra2_4a' },
+  low: { fps: 10, width: 480, colors: 128, statsMode: 'diff', dither: 'bayer:bayer_scale=5' },
 }
 
 /**
@@ -166,10 +177,12 @@ export function buildGifOutputOptions(quality: Quality, speed: number): string[]
   const preset = GIF_PRESET[quality]
   const safeSpeed = Number.isFinite(speed) && speed > 0 ? speed : 1
   const pts = `setpts=PTS/${safeSpeed}`
+  // Never upscale: cap the width at the preset but keep smaller sources as-is.
+  const scale = `scale=min(iw\\,${preset.width}):-2:flags=lanczos`
   const filter =
-    `[0:v]${pts},fps=${preset.fps},scale=${preset.width}:-2:flags=lanczos,split[s0][s1];` +
-    `[s0]palettegen=max_colors=${preset.colors}:stats_mode=diff[p];` +
-    `[s1][p]paletteuse=dither=bayer:bayer_scale=5`
+    `[0:v]${pts},fps=${preset.fps},${scale},split[s0][s1];` +
+    `[s0]palettegen=max_colors=${preset.colors}:stats_mode=${preset.statsMode}[p];` +
+    `[s1][p]paletteuse=dither=${preset.dither}:diff_mode=rectangle`
 
   return ['-filter_complex', filter, '-loop', '0', '-an']
 }
