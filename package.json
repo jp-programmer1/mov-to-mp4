@@ -55,10 +55,12 @@
     "artifactName": "${productName}-${version}-${arch}.${ext}",
     "mac": {
       "target": "dmg",
+      "artifactName": "MOV-to-MP4-mac-${arch}.${ext}",
       "category": "public.app-category.video",
       "hardenedRuntime": false
     },
     "win": {
+      "artifactName": "MOV-to-MP4-Setup-${arch}.${ext}",
       "target": [
         {
           "target": "nsis",

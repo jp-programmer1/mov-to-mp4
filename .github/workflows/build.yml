@@ -5,6 +5,9 @@ name: Build installers
 #   - macOS    -> .dmg
 # Se ejecuta manualmente (workflow_dispatch) o al publicar un tag vX.Y.Z.
 # Con un tag, además adjunta los instaladores a una Release de GitHub.
+# Los nombres son fijos (sin versión) para que este link siempre baje la última:
+#   https://github.com/jp-programmer1/mov-to-mp4/releases/latest/download/MOV-to-MP4-mac-arm64.dmg
+#   https://github.com/jp-programmer1/mov-to-mp4/releases/latest/download/MOV-to-MP4-Setup-x64.exe
 
 on:
   workflow_dispatch:
@@ -33,19 +36,20 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 11
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build ${{ matrix.os }} installer
-        run: pnpm run ${{ matrix.script }}
+        # electron-builder no publica: lo hace el paso "Attach to GitHub Release".
+        run: pnpm run ${{ matrix.script }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
