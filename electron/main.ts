@@ -18,6 +18,8 @@ process.env.APP_ROOT = path.join(__dirname, '..')
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
 const RENDERER_DIST = path.join(process.env.APP_ROOT, 'dist')
 
+const PATIO_APPS_URL = 'https://patioapps.com'
+
 const SUPPORTED_EXTENSIONS = ['.mov'] // Extend here for future formats (avi, mkv, webm...)
 
 let mainWindow: BrowserWindow | null = null
@@ -30,7 +32,7 @@ function createWindow(): void {
     minWidth: 720,
     minHeight: 520,
     title: 'MOV → MP4',
-    backgroundColor: '#0f1115',
+    backgroundColor: '#0f1513',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -128,7 +130,22 @@ function registerIpc(): void {
   ipcMain.handle('shell:showInFolder', (_e, targetPath: string) => {
     shell.showItemInFolder(targetPath)
   })
+
+  // Fixed URL on purpose: the renderer can't ask to open arbitrary links.
+  ipcMain.handle('shell:openPatioApps', async () => {
+    await shell.openExternal(PATIO_APPS_URL)
+  })
+
+  ipcMain.handle('app:version', (): string => app.getVersion())
 }
+
+app.setAboutPanelOptions({
+  applicationName: 'MOV to MP4',
+  applicationVersion: app.getVersion(),
+  credits: 'Una app de Patio Apps — hecha en Mendoza.\npatioapps.com',
+  copyright: '© 2026 Patio Apps',
+  website: PATIO_APPS_URL,
+})
 
 app.whenReady().then(() => {
   registerIpc()

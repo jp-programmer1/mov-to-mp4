@@ -77,6 +77,9 @@ export interface ConverterApi {
   cancelJob: (id: string) => Promise<void>
   openPath: (targetPath: string) => Promise<void>
   showInFolder: (targetPath: string) => Promise<void>
+  /** Opens patioapps.com in the default browser. */
+  openPatioApps: () => Promise<void>
+  getVersion: () => Promise<string>
   onProgress: (cb: (update: ProgressUpdate) => void) => () => void
 }
 

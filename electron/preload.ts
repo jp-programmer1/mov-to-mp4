@@ -24,6 +24,8 @@ const api: ConverterApi = {
   openPath: (targetPath) => ipcRenderer.invoke('shell:openPath', targetPath) as Promise<void>,
   showInFolder: (targetPath) =>
     ipcRenderer.invoke('shell:showInFolder', targetPath) as Promise<void>,
+  openPatioApps: () => ipcRenderer.invoke('shell:openPatioApps') as Promise<void>,
+  getVersion: () => ipcRenderer.invoke('app:version') as Promise<string>,
   onProgress: (cb: (update: ProgressUpdate) => void) => {
     const listener = (_e: unknown, update: ProgressUpdate) => cb(update)
     ipcRenderer.on('conversion:progress', listener)

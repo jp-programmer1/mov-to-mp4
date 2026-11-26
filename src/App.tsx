@@ -1,9 +1,16 @@
+import { useEffect, useState } from 'react'
 import { useConverter } from './hooks/useConverter'
 import SettingsPanel from './components/SettingsPanel'
 import FileRow from './components/FileRow'
+import appIcon from './assets/icon.png'
 
 export default function App() {
   const c = useConverter()
+  const [version, setVersion] = useState<string | null>(null)
+
+  useEffect(() => {
+    window.converter.getVersion().then(setVersion).catch(() => setVersion(null))
+  }, [])
 
   if (!c.settings) {
     return <div className="loading">Cargando…</div>
@@ -16,6 +23,7 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <div className="brand">
+          <img className="brand-icon" src={appIcon} alt="" />
           <span className="logo">MOV</span>
           <span className="arrow">→</span>
           <span className={`logo ${c.settings.outputFormat}`}>{c.settings.outputFormat.toUpperCase()}</span>
@@ -106,6 +114,17 @@ export default function App() {
           onLoadInput={c.loadInputFolder}
         />
       </div>
+
+      <footer className="appbar">
+        <span>[ MOV to MP4{version ? ` · v${version}` : ''} ]</span>
+        <button
+          className="patio-link"
+          onClick={() => window.converter.openPatioApps()}
+          title="Abrir patioapps.com"
+        >
+          Parte de <strong>Patio Apps</strong> ↗
+        </button>
+      </footer>
     </div>
   )
 }

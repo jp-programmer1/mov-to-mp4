@@ -1,19 +1,57 @@
+@font-face {
+  font-family: 'Phudu';
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/phudu-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Phudu';
+  font-weight: 800;
+  font-display: swap;
+  src: url('./assets/fonts/phudu-latin-800-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Phudu';
+  font-weight: 900;
+  font-display: swap;
+  src: url('./assets/fonts/phudu-latin-900-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/geist-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-weight: 600;
+  font-display: swap;
+  src: url('./assets/fonts/geist-mono-latin-600-normal.woff2') format('woff2');
+}
+
+/* Patio Apps palette — same tokens as the app icon and patioapps.com */
 :root {
-  --bg: #0f1115;
-  --bg-elev: #171a21;
-  --bg-elev-2: #1e222b;
-  --border: #272b36;
-  --text: #e7e9ee;
-  --text-dim: #9aa1b1;
-  --text-faint: #6b7280;
-  --accent: #4f8cff;
-  --accent-2: #3a6fd6;
-  --green: #34d399;
-  --red: #f87171;
-  --amber: #fbbf24;
-  --radius: 10px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  --bg: #0f1513;
+  --bg-elev: #141d1b;
+  --bg-elev-2: #1b2625;
+  --bg-hover: #22302e;
+  --border: #243230;
+  --text: #f4f3eb;
+  --text-dim: #a3aba8;
+  --text-faint: #838b89;
+  --accent: #68f12b;
+  --accent-2: #c4ff6b;
+  --on-accent: #0f1513;
+  --green: #68f12b;
+  --green-deep: #245535;
+  --red: #ff6a4d;
+  --amber: #fab700;
+  --orange: #f65500;
+  --radius: 2px;
+  --font-head: 'Phudu', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
+  font-family: var(--font-head);
+  font-weight: 600;
 }
 
 * {
@@ -62,25 +100,32 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.brand-icon {
+  width: 30px;
+  height: 30px;
+  margin: -4px 4px -4px -4px;
 }
 
 .logo {
   background: var(--bg-elev-2);
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius);
   font-size: 13px;
 }
 
 .logo.mp4 {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .logo.gif {
-  background: #c2410c;
-  color: #fff;
+  background: var(--orange);
+  color: var(--on-accent);
 }
 
 .arrow {
@@ -98,7 +143,7 @@ body {
   background: var(--bg-elev-2);
   color: var(--text);
   padding: 8px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -106,7 +151,7 @@ body {
 }
 
 .btn:hover {
-  background: #262b36;
+  background: var(--bg-hover);
 }
 
 .btn:disabled {
@@ -117,11 +162,12 @@ body {
 .btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .btn.primary:hover:not(:disabled) {
   background: var(--accent-2);
+  border-color: var(--accent-2);
 }
 
 .btn.danger {
@@ -131,7 +177,7 @@ body {
 }
 
 .btn.danger:hover {
-  background: rgba(248, 113, 113, 0.12);
+  background: rgba(255, 106, 77, 0.12);
 }
 
 .btn.ghost {
@@ -156,7 +202,7 @@ body {
 .progress {
   height: 6px;
   background: var(--bg-elev-2);
-  border-radius: 999px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -167,7 +213,7 @@ body {
 .progress-fill {
   height: 100%;
   background: var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius);
   transition: width 0.25s ease;
 }
 
@@ -282,14 +328,14 @@ body {
   border: 1px solid var(--border);
   color: var(--text-dim);
   padding: 6px 10px;
-  border-radius: 7px;
+  border-radius: var(--radius);
   font-size: 12px;
   cursor: pointer;
 }
 
 .icon-btn:hover {
   color: var(--text);
-  background: #262b36;
+  background: var(--bg-hover);
 }
 
 /* Badges */
@@ -297,27 +343,27 @@ body {
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius);
   white-space: nowrap;
 }
 
 .badge-pending {
-  background: rgba(154, 161, 177, 0.15);
+  background: rgba(163, 171, 168, 0.12);
   color: var(--text-dim);
 }
 
 .badge-converting {
-  background: rgba(79, 140, 255, 0.16);
-  color: var(--accent);
+  background: rgba(250, 183, 0, 0.14);
+  color: var(--amber);
 }
 
 .badge-completed {
-  background: rgba(52, 211, 153, 0.16);
+  background: rgba(104, 241, 43, 0.12);
   color: var(--green);
 }
 
 .badge-error {
-  background: rgba(248, 113, 113, 0.16);
+  background: rgba(255, 106, 77, 0.14);
   color: var(--red);
 }
 
@@ -390,7 +436,7 @@ body {
   font-size: 12px;
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--radius);
   padding: 7px 9px;
   white-space: nowrap;
   overflow: hidden;
@@ -402,7 +448,7 @@ body {
   background: var(--bg-elev-2);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 7px;
+  border-radius: var(--radius);
   padding: 7px 10px;
   cursor: pointer;
   font-size: 12px;
@@ -411,7 +457,7 @@ body {
 }
 
 .mini-btn:hover {
-  background: #262b36;
+  background: var(--bg-hover);
 }
 
 .hint {
@@ -431,7 +477,7 @@ body {
   border: 1px solid var(--border);
   color: var(--text-dim);
   padding: 7px 0;
-  border-radius: 7px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
@@ -440,7 +486,7 @@ body {
 .seg.active {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .stepper {
@@ -513,7 +559,111 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2c313d;
-  border-radius: 999px;
+  background: var(--bg-elev-2);
+  border-radius: var(--radius);
   border: 2px solid var(--bg);
+}
+
+/* Patio typography: Phudu uppercase for actions/titles, Geist Mono for labels and data */
+.btn,
+.seg,
+.mini-btn,
+.empty-title {
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.btn {
+  font-weight: 800;
+}
+
+.empty-title {
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.global-head,
+.list-toolbar,
+.count,
+.link-btn,
+.row-meta,
+.badge,
+.settings h2,
+.field > label,
+.path,
+.hint,
+.engine,
+.icon-btn,
+.speed-value,
+.stepper-value {
+  font-family: var(--font-mono);
+}
+
+.badge,
+.settings h2,
+.field > label,
+.global-head,
+.count {
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.settings h2::before {
+  content: '[ ';
+}
+
+.settings h2::after {
+  content: ' ]';
+}
+
+.topbar {
+  background: var(--bg);
+}
+
+.progress-fill {
+  transition: width 0.25s cubic-bezier(.76, 0, .24, 1);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Bottom bar: app version + link to Patio Apps (the "about") */
+.appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  height: 34px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+}
+
+.patio-link {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.patio-link strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.patio-link:hover strong {
+  color: var(--accent-2);
+  text-decoration: underline;
 }

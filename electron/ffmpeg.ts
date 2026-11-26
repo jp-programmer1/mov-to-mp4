@@ -1,26 +1,27 @@
 import ffmpeg from 'fluent-ffmpeg'
 import ffmpegStatic from 'ffmpeg-static'
-import ffprobeStatic from 'ffprobe-static'
 import { execFile } from 'node:child_process'
 import type { Quality } from '../shared/types'
 
 /**
- * ffmpeg-static / ffprobe-static ship prebuilt binaries. When the app is
+ * ffmpeg-static ships a prebuilt binary. When the app is
  * packaged into an asar archive the binaries live in `app.asar.unpacked`
  * (configured via `asarUnpack` in package.json), so we rewrite the path.
+ *
+ * ffprobe is intentionally not bundled: ffprobe-static ships an Intel-only
+ * binary even for darwin/arm64, which forces Rosetta on Apple Silicon.
+ * The duration is read from ffmpeg's own output instead.
  */
 function resolveBinary(p: string | null): string {
-  if (!p) throw new Error('No se encontró el binario de FFmpeg/FFprobe.')
+  if (!p) throw new Error('No se encontró el binario de FFmpeg.')
   return p.replace('app.asar', 'app.asar.unpacked')
 }
 
 const ffmpegPath = resolveBinary(ffmpegStatic as unknown as string)
-const ffprobePath = resolveBinary(ffprobeStatic.path)
 
 ffmpeg.setFfmpegPath(ffmpegPath)
-ffmpeg.setFfprobePath(ffprobePath)
 
-export { ffmpeg, ffmpegPath, ffprobePath }
+export { ffmpeg, ffmpegPath }
 
 let cachedEncoders: string[] | null = null
 
@@ -86,13 +87,18 @@ export function encoderLabel(gpuEncoder: string | null): string {
   return GPU_LABELS[gpuEncoder] ?? `GPU · ${gpuEncoder}`
 }
 
-/** Probe a media file for its duration in seconds. Returns null on failure. */
+/**
+ * Read a media file's duration in seconds from `ffmpeg -i` (no ffprobe needed).
+ * ffmpeg exits with an error because no output is given, but it still prints
+ * the container info, e.g. "Duration: 00:01:23.45". Returns null on failure.
+ */
 export function probeDuration(inputPath: string): Promise<number | null> {
   return new Promise((resolve) => {
-    ffmpeg.ffprobe(inputPath, (err, data) => {
-      if (err || !data?.format?.duration) return resolve(null)
-      const d = Number(data.format.duration)
-      resolve(Number.isFinite(d) ? d : null)
+    execFile(ffmpegPath, ['-hide_banner', '-i', inputPath], (_err, _stdout, stderr) => {
+      const match = String(stderr ?? '').match(/Duration:\s*(\d+):(\d{2}):(\d{2}(?:\.\d+)?)/)
+      if (!match) return resolve(null)
+      const d = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])
+      resolve(Number.isFinite(d) && d > 0 ? d : null)
     })
   })
 }
